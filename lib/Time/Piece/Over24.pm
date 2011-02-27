@@ -5,7 +5,7 @@ use warnings;
 use vars qw/$VERSION/;
 use Time::Piece;
 
-$VERSION = "0.001";
+$VERSION = "0.002";
 
 sub import { shift; @_ = ("Time::Piece",@_); goto &Time::Piece::import }
 
@@ -36,27 +36,32 @@ sub _over24 {
   return $self->strptime($data." $time","%Y-%m-%d %T") + $add_day*86400;
 }
 
-=pod
+1;
+__END__
 
-parase ovaer 24:00:00 and create new Time::Piece object
+=head1 NAME
 
-#Time::Piece 
-my $t = locatime;
+Time::Piece::Over24 - Adds over 24:00:00 methods to Time::Piece
+
+=head1 SYNOPSIS
+
+use Time::Piece::Over24;
+
+my $t = localtime;
 
 #ex today is 2011-01-01
-
 #over24_time
 my $over_time = $t->over24_time("26:00:00");
 #over24_datetime
 my $over_datetime = $t->over24_datetime("2011-01-01 26:00:00");
 
-$over_time->datetime;
-$over_datetime->datetime;
+print $over_time->datetime;
+print $over_datetime->datetime;
 
 >2011-01-02 02:00:00
 
+=head1 SEE ALSO
+
+L<Time::Piece>, L<Time::Piece::MySQL>
 
 =cut
-
-
-1;

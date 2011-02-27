@@ -7,7 +7,6 @@ inc/Module/Install/Metadata.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
 lib/Time/Piece/Over24.pm
-lib/Time/Piece/Over24.pm.tdy
 MakeFile.PL
 MANIFEST			This list of files
 META.yml
