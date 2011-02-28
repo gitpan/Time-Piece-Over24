@@ -5,11 +5,20 @@ use warnings;
 use vars qw/$VERSION/;
 use Time::Piece;
 
-$VERSION = "0.002";
+$VERSION = "0.003";
 
 sub import { shift; @_ = ("Time::Piece",@_); goto &Time::Piece::import }
 
 package Time::Piece;
+
+sub over24 {
+  my ($self, $time) = @_;
+  if ($time =~ /\d\d:\d\d:\d\d/) {
+    return $self->over24_time($time);
+  } else {
+    return $self->over24_datetime($time);
+  }
+}
 
 sub over24_datetime {
   my ($self, $datetime) = @_;
@@ -45,20 +54,26 @@ Time::Piece::Over24 - Adds over 24:00:00 methods to Time::Piece
 
 =head1 SYNOPSIS
 
-use Time::Piece::Over24;
+  use Time::Piece::Over24;
 
-my $t = localtime;
+  my $t = localtime;
 
-#ex today is 2011-01-01
-#over24_time
-my $over_time = $t->over24_time("26:00:00");
-#over24_datetime
-my $over_datetime = $t->over24_datetime("2011-01-01 26:00:00");
+  #ex today is 2011-01-01
+  #over24_time
+  my $over_time = $t->over24_time("26:00:00");
+  #over24_datetime
+  my $over_datetime = $t->over24_datetime("2011-01-01 26:00:00");
+  
+  #alias over24_time or over24_datetime
+  #call over24_time
+  #$t->over24("26:00:00");
+  #call over24_datetime
+  #$t->over24("2011-01-01 26:00:00");
 
-print $over_time->datetime;
-print $over_datetime->datetime;
+  print $over_time->datetime;
+  print $over_datetime->datetime;
 
->2011-01-02 02:00:00
+  >2011-01-02 02:00:00
 
 =head1 SEE ALSO
 
