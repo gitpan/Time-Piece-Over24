@@ -5,7 +5,7 @@ use warnings;
 use vars qw/$VERSION/;
 use Time::Piece;
 
-$VERSION = "0.003";
+$VERSION = "0.004";
 
 sub import { shift; @_ = ("Time::Piece",@_); goto &Time::Piece::import }
 
