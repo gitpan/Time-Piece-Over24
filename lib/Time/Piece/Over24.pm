@@ -5,7 +5,7 @@ use warnings;
 use vars qw/$VERSION/;
 use Time::Piece;
 
-$VERSION = "0.005";
+$VERSION = "0.006";
 my $OVER24_OFFSET = '00:00:00';
 
 sub import { shift; @_ = ( "Time::Piece", @_ ); goto &Time::Piece::import }
@@ -24,11 +24,20 @@ sub over24_time {
 
     my $hour = $self->hour;
     if ( $self < $self->_over24_offset_object ) {
-        $self -= 86400;
-        $hour += 24;
+      $self -= 86400;
+      $hour += 24;
     }
     $hour = sprintf( "%02d", $hour );
     return $self->strftime("%Y-%m-%d $hour:%M:%S");
+}
+
+sub over24_hour {
+    my ($self) = @_;
+    my $hour = $self->hour;
+    if ( $self < $self->_over24_offset_object ) {
+      $hour += 24;
+    }
+    return $hour;
 }
 
 sub over24_datetime {
@@ -79,11 +88,6 @@ sub _over24_offset_object {
         '%Y-%m-%d %H:%M:%S' );
 }
 
-sub _over24 {
-    my ( $self, $datetime ) = @_;
-
-}
-
 sub _from_over24 {
     my ( $self, $datetime ) = @_;
     my @hms = split /[\s:]/, $datetime;
@@ -117,6 +121,9 @@ Time::Piece::Over24 - Adds over 24:00:00 methods to Time::Piece
   $t->over24_offset("05:00:00");
   print $t->over24_time;
   >2011-01-01 28:00:00
+
+  print $t->over24_hour;
+  >28;
 
   #e.g. today is 2011-01-01
   #retun Time::Piece object

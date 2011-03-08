@@ -1,4 +1,4 @@
-use Test::More tests=>6;
+use Test::More tests=>8;
 
 use Time::Piece::Over24;
 
@@ -14,11 +14,17 @@ my $offset_test = $t->strptime("2011-01-02 02:00:00" , "%Y-%m-%d %H:%M:%S");
 my $offset = $offset_test->over24_offset;
 is $offset,"00:00:00";
 
-my $datetime = $offset_test->over24_time;
+my $datetime = $offset_test->over24_hour;
+is $datetime,"2";
+
+$datetime = $offset_test->over24_time;
 is $datetime,"2011-01-02 02:00:00";
 
 $offset = $offset_test->over24_offset("03:00:00");
 is $offset,"03:00:00";
+
+$datetime = $offset_test->over24_hour;
+is $datetime,"26";
 
 $datetime = $offset_test->over24_time();
 is $datetime,"2011-01-01 26:00:00";
