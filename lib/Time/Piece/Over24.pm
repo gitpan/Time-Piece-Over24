@@ -5,7 +5,7 @@ use warnings;
 use vars qw/$VERSION/;
 use Time::Piece;
 
-$VERSION = "0.006";
+$VERSION = "0.007";
 my $OVER24_OFFSET = '00:00:00';
 
 sub import { shift; @_ = ( "Time::Piece", @_ ); goto &Time::Piece::import }
@@ -15,34 +15,58 @@ package Time::Piece;
 sub over24 {
     my ( $self, $time ) = @_;
     return $self->from_over24($time) if ($time);
-    return $self->over24_time;
+    return $self->over24_datetime;
 }
 
 sub over24_time {
     my ( $self, $time ) = @_;
     return $self->from_over24_time($time) if ($time);
 
-    my $hour = $self->hour;
-    if ( $self < $self->_over24_offset_object ) {
-      $self -= 86400;
-      $hour += 24;
-    }
+    my $hour;
+    ($self,$hour) = $self->_over24_offset_pattern;
     $hour = sprintf( "%02d", $hour );
-    return $self->strftime("%Y-%m-%d $hour:%M:%S");
+    return $self->strftime("$hour:%M:%S");
+}
+
+sub over24_year {
+    my ($self) = @_;
+
+    my $hour;
+    ($self,$hour) = $self->_over24_offset_pattern;
+    return $self->year;
+}
+
+sub over24_mon {
+    my ($self) = @_;
+
+    my $hour;
+    ($self,$hour) = $self->_over24_offset_pattern;
+    return $self->mon;
+}
+
+sub over24_mday {
+    my ($self) = @_;
+
+    my $hour;
+    ($self,$hour) = $self->_over24_offset_pattern;
+    return $self->mday;
 }
 
 sub over24_hour {
     my ($self) = @_;
-    my $hour = $self->hour;
-    if ( $self < $self->_over24_offset_object ) {
-      $hour += 24;
-    }
+    my $hour;
+    ($self,$hour) = $self->_over24_offset_pattern;
     return $hour;
 }
 
 sub over24_datetime {
     my ( $self, $datetime ) = @_;
     return $self->from_over24_time($datetime) if ($datetime);
+
+    my $hour;
+    ($self,$hour) = $self->_over24_offset_pattern;
+    $hour = sprintf( "%02d", $hour );
+    return $self->strftime("%Y-%m-%d $hour:%M:%S");
 }
 
 sub from_over24 {
@@ -88,6 +112,16 @@ sub _over24_offset_object {
         '%Y-%m-%d %H:%M:%S' );
 }
 
+sub _over24_offset_pattern {
+    my ($self) = @_;
+    my $hour = $self->hour;
+    if ( $self < $self->_over24_offset_object ) {
+      $self -= 86400;
+      $hour += 24;
+    }
+    return ($self,$hour);
+}
+
 sub _from_over24 {
     my ( $self, $datetime ) = @_;
     my @hms = split /[\s:]/, $datetime;
@@ -116,11 +150,24 @@ Time::Piece::Over24 - Adds over 24:00:00 methods to Time::Piece
 
   my $t = localtime;
 
-  #e.g. 2011-01-02 04:00:00 now
-  #note 2011-01-"02", no 2011-01-"01"
+  #e.g. 2011-01-01 04:00:00 now
   $t->over24_offset("05:00:00");
+
+  #method changed!! time >>> datetime
+  print $t->over24_datetime;
+  >2010-12-31 28:00:00
+
   print $t->over24_time;
-  >2011-01-01 28:00:00
+  >28:00:00
+
+  print $t->over24_year;
+  >2010
+
+  print $t->over24_mon;
+  >12
+
+  print $t->over24_day;
+  >31
 
   print $t->over24_hour;
   >28;
@@ -173,6 +220,7 @@ get datetime in offset time
 return a Time::Piece object. 
 
 *not null over24_time e.g.over24_time("26:00:00") is alias, from_over24_time
+
 *not null over24_datetime e.g.over24_datetime("26:00:00") is alias, from_over24_datetime
 
 =back
