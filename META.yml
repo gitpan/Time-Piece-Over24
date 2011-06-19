@@ -1,5 +1,7 @@
 ---
 abstract: 'Adds over 24:00:00 methods to Time::Piece'
+author:
+  - 'Synsuke Fujishiro <i47.rozary at gmail.com>'
 build_requires:
   ExtUtils::MakeMaker: 6.42
   Test::More: 0
@@ -20,4 +22,4 @@ requires:
   Time::Piece: 0
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.007
+version: 0.008

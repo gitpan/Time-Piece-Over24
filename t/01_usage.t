@@ -1,4 +1,4 @@
-use Test::More tests=>18;
+use Test::More tests=>26;
 
 use Time::Piece::Over24;
 
@@ -26,7 +26,7 @@ is $datetime,"1";
 $datetime = $offset_test->over24_mday;
 is $datetime,"1";
 
-my $datetime = $offset_test->over24_hour;
+$datetime = $offset_test->over24_hour;
 is $datetime,"2";
 
 $datetime = $offset_test->over24_time;
@@ -58,5 +58,34 @@ is $datetime,"26:00:00";
 
 $datetime = $offset_test->over24_datetime;
 is $datetime,"2010-12-31 26:00:00";
+
+#is_during test
+my $flg = $t->is_during("10:00","11:00","10:30");
+is $flg,1;
+
+$flg = $t->is_during("10:00","11:00","11:30");
+is $flg,undef;
+
+$flg = $t->is_during("23:00","25:00","24:30");
+is $flg,1;
+
+$flg = $t->is_during("23:00","25:00","25:30");
+is $flg,undef;
+
+$flg = $t->is_during("2011-06-19 10:00:00","2011-06-19 11:00:00","2011-06-19 10:30:00");
+is $flg,1;
+
+$flg = $t->is_during("2011-06-19 10:00:00","2011-06-19 11:00:00","2011-06-19 11:30:00");
+is $flg,undef;
+
+my $t2 = $t->strptime("2011-06-19 10:00:00","%Y-%m-%d %T");
+my $t3 = $t->strptime("2011-06-20 10:00:00","%Y-%m-%d %T");
+
+$flg = $t->is_during($t2,$t3,"2011-06-19 10:30:00");
+is $flg,1;
+
+$flg = $t->is_during($t2,$t3,"2011-06-20 11:30:00");
+is $flg,undef;
+
 
 1;

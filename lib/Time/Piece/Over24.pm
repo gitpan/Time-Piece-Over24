@@ -5,7 +5,7 @@ use warnings;
 use vars qw/$VERSION/;
 use Time::Piece;
 
-$VERSION = "0.007";
+$VERSION = "0.008";
 my $OVER24_OFFSET = '00:00:00';
 
 sub import { shift; @_ = ( "Time::Piece", @_ ); goto &Time::Piece::import }
@@ -23,7 +23,7 @@ sub over24_time {
     return $self->from_over24_time($time) if ($time);
 
     my $hour;
-    ($self,$hour) = $self->_over24_offset_pattern;
+    ( $self, $hour ) = $self->_over24_offset_pattern;
     $hour = sprintf( "%02d", $hour );
     return $self->strftime("$hour:%M:%S");
 }
@@ -32,7 +32,7 @@ sub over24_year {
     my ($self) = @_;
 
     my $hour;
-    ($self,$hour) = $self->_over24_offset_pattern;
+    ( $self, $hour ) = $self->_over24_offset_pattern;
     return $self->year;
 }
 
@@ -40,7 +40,7 @@ sub over24_mon {
     my ($self) = @_;
 
     my $hour;
-    ($self,$hour) = $self->_over24_offset_pattern;
+    ( $self, $hour ) = $self->_over24_offset_pattern;
     return $self->mon;
 }
 
@@ -48,15 +48,24 @@ sub over24_mday {
     my ($self) = @_;
 
     my $hour;
-    ($self,$hour) = $self->_over24_offset_pattern;
+    ( $self, $hour ) = $self->_over24_offset_pattern;
     return $self->mday;
 }
 
 sub over24_hour {
     my ($self) = @_;
     my $hour;
-    ($self,$hour) = $self->_over24_offset_pattern;
+    ( $self, $hour ) = $self->_over24_offset_pattern;
     return $hour;
+}
+
+sub over24_ymd {
+    my ($self) = @_;
+    my $hour;
+    ( $self, $hour ) = $self->_over24_offset_pattern;
+
+    #    return $self->strftime("%Y-%m-%d $hour:%M:%S");
+    return $self->ymd;
 }
 
 sub over24_datetime {
@@ -64,14 +73,14 @@ sub over24_datetime {
     return $self->from_over24_time($datetime) if ($datetime);
 
     my $hour;
-    ($self,$hour) = $self->_over24_offset_pattern;
+    ( $self, $hour ) = $self->_over24_offset_pattern;
     $hour = sprintf( "%02d", $hour );
     return $self->strftime("%Y-%m-%d $hour:%M:%S");
 }
 
 sub from_over24 {
     my ( $self, $time ) = @_;
-    if ( $time =~ /\d\d:\d\d:\d\d/ ) {
+    if ( $time =~ /^\d\d:\d\d(?:\:\d\d)?$/ ) {
         return $self->from_over24_time($time);
     }
     else {
@@ -106,6 +115,44 @@ sub over24_offset {
     return $OVER24_OFFSET;
 }
 
+sub is_during {
+    my $self       = shift;
+    my $start_time = shift || die "need start_time";
+    my $end_time   = shift || die "need end_time";
+    my $check_time = shift || $self;
+
+    unless ( ( ref($start_time) eq "Time::Piece" ) ==
+        ( ref($end_time) eq "Time::Piece" ) )
+    {
+        die "start_time and end_time is different object";
+    }
+
+    unless ( length($start_time) == length($end_time) ) {
+        die "start_time and end_time is different format";
+    }
+
+    unless ( ref($check_time) eq "Time::Piece" ) {
+        $check_time = $self->over24($check_time);
+    }
+
+    my ( $start_t, $end_t );
+    if ( ref($start_time) eq "Time::Piece" ) {
+        $start_t = $start_time;
+        $end_t   = $end_time;
+    }
+    else {
+        my $t   = $check_time;
+        my $a_t = $t->over24($start_time);
+        my $b_t = $t->over24( $t->over24($end_time)->hms );
+        $t -= 86400 if ( ( $t < $a_t ) && ( $t < $b_t ) );
+
+        $start_t = $t->over24($start_time);
+        $end_t   = $t->over24($end_time);
+    }
+
+    return $start_t <= $check_time && $check_time < $end_t ? '1' : undef;
+}
+
 sub _over24_offset_object {
     my ($self) = @_;
     return $self->strptime( $self->ymd . " " . $self->over24_offset,
@@ -116,10 +163,10 @@ sub _over24_offset_pattern {
     my ($self) = @_;
     my $hour = $self->hour;
     if ( $self < $self->_over24_offset_object ) {
-      $self -= 86400;
-      $hour += 24;
+        $self -= 86400;
+        $hour += 24;
     }
-    return ($self,$hour);
+    return ( $self, $hour );
 }
 
 sub _from_over24 {
@@ -186,6 +233,12 @@ Time::Piece::Over24 - Adds over 24:00:00 methods to Time::Piece
   $t->over24("26:00:00"); #call from_over24_time
   $t->over24("2011-01-01 26:00:00"); #call from_over24_datetime
 
+  print $t->is_during("2010-12-31 23:00:00","2011-01-01 10:00:00");
+  >1
+
+  print $t->is_during("2011-01-01 05:00:00","2011-01-01 10:00:00");
+  >Use of uninitialized value in print ...   = retrun value is undef!
+
 =head1 METHODS
 
 =over 4
@@ -199,6 +252,7 @@ default "00:00:00".
 value is undef, return offset time.
 
 print localtime->over24_offset();
+
 >00:00:00
 
 not undef is set offset time.
@@ -223,7 +277,31 @@ return a Time::Piece object.
 
 *not null over24_datetime e.g.over24_datetime("26:00:00") is alias, from_over24_datetime
 
+=item is_during
+
+return 1 or undef
+
+check a time
+
+is_during("start_time","end_time","check_time");
+
+check_time is option.default is now.
+
+start_time and end_time format is datetime,time and timepiece object.
+
+plz start and end is same format.
+
 =back
+
+=head1 AUTHOR
+
+Synsuke Fujishiro <i47.rozary at gmail.com>
+
+=head1 COPYRIGHT & LICENSE
+
+(c) 2011, Synsuke Fujishiro.All rights reserved.
+
+This module is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
 
 =head1 SEE ALSO
 
