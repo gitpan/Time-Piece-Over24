@@ -5,7 +5,7 @@ use warnings;
 use vars qw/$VERSION/;
 use Time::Piece;
 
-$VERSION = "0.008";
+$VERSION = "0.009";
 my $OVER24_OFFSET = '00:00:00';
 
 sub import { shift; @_ = ( "Time::Piece", @_ ); goto &Time::Piece::import }
@@ -80,8 +80,11 @@ sub over24_datetime {
 
 sub from_over24 {
     my ( $self, $time ) = @_;
-    if ( $time =~ /^\d\d:\d\d(?:\:\d\d)?$/ ) {
+    if ( $time =~ /^\d\d:\d\d:\d\d$/ ) {
         return $self->from_over24_time($time);
+    }
+    elsif ( $time =~ /^\d\d:\d\d$/ ) {
+        return $self->from_over24_time( $time . ":00" );
     }
     else {
         return $self->from_over24_datetime($time);

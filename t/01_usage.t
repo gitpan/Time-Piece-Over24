@@ -1,5 +1,6 @@
 use Test::More tests=>26;
 
+use lib "/Users/fujishiro/cpan/Time-Piece-Over24/lib";
 use Time::Piece::Over24;
 
 my $t = localtime;
