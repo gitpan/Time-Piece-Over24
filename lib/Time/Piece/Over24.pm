@@ -5,7 +5,7 @@ use warnings;
 use vars qw/$VERSION/;
 use Time::Piece;
 
-$VERSION = "0.009";
+$VERSION = "0.010";
 my $OVER24_OFFSET = '00:00:00';
 
 sub import { shift; @_ = ( "Time::Piece", @_ ); goto &Time::Piece::import }
@@ -153,7 +153,7 @@ sub is_during {
         $end_t   = $t->over24($end_time);
     }
 
-    return $start_t <= $check_time && $check_time < $end_t ? '1' : undef;
+    return (($start_t <= $check_time) && ($check_time <= $end_t)) ? '1' : undef;
 }
 
 sub _over24_offset_object {
