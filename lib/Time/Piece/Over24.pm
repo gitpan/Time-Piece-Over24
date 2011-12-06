@@ -5,8 +5,9 @@ use warnings;
 use vars qw/$VERSION/;
 use Time::Piece;
 
-$VERSION = "0.010";
-my $OVER24_OFFSET = '00:00:00';
+$VERSION = "0.011";
+my $OVER24_OFFSET   = '00:00:00';
+my $OVER24_BASETIME = localtime;
 
 sub import { shift; @_ = ( "Time::Piece", @_ ); goto &Time::Piece::import }
 
@@ -14,6 +15,7 @@ package Time::Piece;
 
 sub over24 {
     my ( $self, $time ) = @_;
+
     return $self->from_over24($time) if ($time);
     return $self->over24_datetime;
 }
@@ -64,16 +66,15 @@ sub over24_ymd {
     my $hour;
     ( $self, $hour ) = $self->_over24_offset_pattern;
 
-    #    return $self->strftime("%Y-%m-%d $hour:%M:%S");
-    return $self->ymd;
+    return $self->strftime("%Y-%m-%d $hour:%M:%S");
 }
 
 sub over24_datetime {
     my ( $self, $datetime ) = @_;
-    return $self->from_over24_time($datetime) if ($datetime);
+    return $self->from_over24_datetime($datetime) if ($datetime);
 
     my $hour;
-    ( $self, $hour ) = $self->_over24_offset_pattern;
+    ( $self, $hour ) = $self->_over24_offset_pattern();
     $hour = sprintf( "%02d", $hour );
     return $self->strftime("%Y-%m-%d $hour:%M:%S");
 }
@@ -93,7 +94,7 @@ sub from_over24 {
 
 sub from_over24_time {
     my ( $self, $time ) = @_;
-    my $datetime = $self->ymd . " $time";
+    my $datetime = sprintf("%s %s",$self->ymd,$time);
     return $self->_from_over24($datetime);
 }
 
@@ -124,6 +125,9 @@ sub is_during {
     my $end_time   = shift || die "need end_time";
     my $check_time = shift || $self;
 
+    my $buf_offset = $self->over24_offset;
+    $self->over24_offset("00:00:00");
+
     unless ( ( ref($start_time) eq "Time::Piece" ) ==
         ( ref($end_time) eq "Time::Piece" ) )
     {
@@ -134,8 +138,13 @@ sub is_during {
         die "start_time and end_time is different format";
     }
 
+    my $div = 0;
     unless ( ref($check_time) eq "Time::Piece" ) {
+        my $buf = $check_time;
         $check_time = $self->over24($check_time);
+        if ( $buf =~ /^\d\d:\d\d$/ ) {
+            $div = int( $check_time->over24_hour / 24 );
+        }
     }
 
     my ( $start_t, $end_t );
@@ -144,50 +153,58 @@ sub is_during {
         $end_t   = $end_time;
     }
     else {
-        my $t   = $check_time;
-        my $a_t = $t->over24($start_time);
-        my $b_t = $t->over24( $t->over24($end_time)->hms );
-        $t -= 86400 if ( ( $t < $a_t ) && ( $t < $b_t ) );
-
-        $start_t = $t->over24($start_time);
-        $end_t   = $t->over24($end_time);
+        my $t        = $check_time;
+        my $div_time = 86400 * $div;
+        $start_t = $t->over24($start_time) - $div_time;
+        $end_t   = $t->over24($end_time) - $div_time;
     }
 
-    return (($start_t <= $check_time) && ($check_time <= $end_t)) ? '1' : undef;
+    my $rtn = ( ( $start_t <= $check_time ) && ( $check_time <= $end_t ) )
+      ? '1'
+      : undef;
+    $self->over24_offset($buf_offset);
+    return $rtn;
 }
 
 sub _over24_offset_object {
     my ($self) = @_;
-    return $self->strptime( $self->ymd . " " . $self->over24_offset,
-        '%Y-%m-%d %H:%M:%S' );
+
+    my $ymd =
+      $self->over24_offset eq "00:00:00" ? $OVER24_BASETIME->ymd : $self->ymd;
+    return $self->strptime( sprintf( "%s %s", $ymd, $self->over24_offset ),
+        '%Y-%m-%d %T' );
 }
 
 sub _over24_offset_pattern {
     my ($self) = @_;
-    my $hour = $self->hour;
-    if ( $self < $self->_over24_offset_object ) {
-        $self -= 86400;
-        $hour += 24;
+    my $hour   = $self->hour;
+    my $ts    = $self - $self->_over24_offset_object;
+
+    my $div = $self->over24_offset eq "00:00:00" ? int( $ts->days ) : 0;
+    $div += 1 if ( $ts < 0 );
+    if ($div > 0) {
+      $self -= 86400 * $div;
+      $hour += 24 * $div;
     }
+
     return ( $self, $hour );
 }
 
 sub _from_over24 {
     my ( $self, $datetime ) = @_;
-    my @hms = split /[\s:]/, $datetime;
-    my $data = shift @hms;
 
-    my $add_day = 0;
-    if ( $hms[0] >= 24 ) {
-        $add_day = int( $hms[0] / 24 );
-        $hms[0] = sprintf( "%02d", $hms[0] - 24 * $add_day );
-    }
-    my $time = join ":", @hms;
-    return $self->strptime( $data . " $time", "%Y-%m-%d %T" ) +
-      $add_day * 86400;
+    my @hms = split /[\s:]/, $datetime;
+    my $date = shift @hms;
+    my $time = join ":", sprintf( "%02d",$hms[0] % 24 ),$hms[1],$hms[2];
+
+    $OVER24_BASETIME =
+      $self->strptime( sprintf( "%s %s", $date, $time ), "%Y-%m-%d %T" );
+
+    return $OVER24_BASETIME + int( $hms[0] / 24 ) * 86400;
 }
 
 1;
+
 __END__
 
 =head1 NAME
@@ -216,7 +233,7 @@ Time::Piece::Over24 - Adds over 24:00:00 methods to Time::Piece
   print $t->over24_mon;
   >12
 
-  print $t->over24_day;
+  print $t->over24_mday;
   >31
 
   print $t->over24_hour;
