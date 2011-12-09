@@ -5,6 +5,7 @@ author 'Syunsuke Fujishiro';
 all_from 'lib/Time/Piece/Over24.pm';
 
 build_requires 'Test::More';
+build_requires 'Test::MockTime';
 requires 'Time::Piece';
 license 'perl';
 
