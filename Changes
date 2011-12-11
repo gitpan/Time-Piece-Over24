@@ -3,3 +3,7 @@ CHANGES
 0.12 2011-12-09
 
 - added build_requires 'Test::MockTime';
+
+0.13 2011-12-11
+
+- added build_requires 'Time::Piece::MySQL';
