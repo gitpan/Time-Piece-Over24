@@ -7,3 +7,7 @@ CHANGES
 0.13 2011-12-11
 
 - added build_requires 'Time::Piece::MySQL';
+
+0.14 2011-12-12
+
+- changed test considering the time zone

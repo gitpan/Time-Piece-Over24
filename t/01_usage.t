@@ -88,7 +88,7 @@ while ( $time < 86400 * 2 ) {
     is $over->is_during( $start, $over24_end, $base ), $check_during,
       "is_during time piece";
 
-    set_absolute_time( ( $base - 9 * 60 * 60 )->datetime . 'Z' );
+    set_absolute_time( ( $base - $t->tzoffset )->datetime . 'Z' );
     my $mock_base = localtime;
     $check_during = ( $start <= $mock_base && $mock_base <= $end ) ? 1 : undef;
     is $over->is_during( $start, $end ), $check_during, "is_during now";
